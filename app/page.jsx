@@ -26,6 +26,13 @@ const initials = (name) => (name||"?").split(" ").map(w=>w[0]).join("").slice(0,
 
 function formatDateLong(d) { if(!d) return ""; return new Date(d+"T12:00:00").toLocaleDateString("en-US",{weekday:"long",month:"long",day:"numeric",year:"numeric"}); }
 function formatDateShort(d) { if(!d) return ""; return new Date(d+"T12:00:00").toLocaleDateString("en-US",{month:"short",day:"numeric"}); }
+function formatTime(t) {
+  if(!t) return "";
+  const [h,m] = t.split(":").map(Number);
+  const ampm = h >= 12 ? "PM" : "AM";
+  const hour = h % 12 || 12;
+  return `${hour}:${String(m).padStart(2,"0")} ${ampm}`;
+}
 function getDaysBetween(start,end) {
   const days=[]; let cur=new Date(start+"T12:00:00"); const last=new Date(end+"T12:00:00");
   while(cur<=last){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
@@ -136,7 +143,7 @@ function SessionDetail({session,attendees,onClose,onEdit,isAdmin}){
         </div>
         <div style={{padding:"20px 28px",display:"flex",flexDirection:"column",gap:14}}>
           <div style={{display:"grid",gridTemplateColumns:"1fr 1fr 1fr",gap:10}}>
-            {[["📅","Date",formatDateShort(session.day)],["🕐","Time",(session.time||"TBD")+(session.endTime?` – ${session.endTime}`:"")],["📍","Room",session.room||"TBD"]].map(([ico,ttl,val])=>(
+            {[["📅","Date",formatDateShort(session.day)],["🕐","Time",(session.time?formatTime(session.time):"TBD")+(session.endTime?` – ${formatTime(session.endTime)}`:"")],["📍","Room",session.room||"TBD"]].map(([ico,ttl,val])=>(
               <div key={ttl} style={{background:UA.warmGray,borderRadius:8,padding:"10px 12px"}}>
                 <div style={{...secT,marginBottom:3}}>{ico} {ttl}</div>
                 <div style={{fontSize:12,fontWeight:700,color:"#1a1a2e"}}>{val}</div>
@@ -229,7 +236,7 @@ function AttendeeView({attendee,sessions,onClose,onEdit,isAdmin}){
                           <div style={{fontSize:10,color:"#6B6057",marginTop:2}}>{formatDateShort(s.day)}{s.room&&` · ${s.room}`}</div>
                           {s.type&&<span style={{fontSize:9,background:tc+"18",color:tc,padding:"1px 6px",borderRadius:8,fontWeight:700,marginTop:3,display:"inline-block",letterSpacing:0.5}}>{s.type.toUpperCase()}</span>}
                         </div>
-                        {s.time&&<span style={{background:"#fff",padding:"2px 8px",borderRadius:5,fontSize:11,fontWeight:700,color:tc,marginLeft:10,whiteSpace:"nowrap",border:"1px solid "+tc+"30"}}>{s.time}</span>}
+                        {s.time&&<span style={{background:"#fff",padding:"2px 8px",borderRadius:5,fontSize:11,fontWeight:700,color:tc,marginLeft:10,whiteSpace:"nowrap",border:"1px solid "+tc+"30"}}>{formatTime(s.time)}</span>}
                       </div>
                     );
                   })}
@@ -504,7 +511,7 @@ export default function App(){
           <div style={{flex:1}}>
             <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
               {s.type&&<span style={{fontSize:9,background:tc+"18",color:tc,padding:"2px 7px",borderRadius:8,fontWeight:800,letterSpacing:0.8}}>{s.type.toUpperCase()}</span>}
-              {s.time&&<span style={{fontSize:11,fontWeight:700,color:tc}}>{s.time}{s.endTime&&` – ${s.endTime}`}</span>}
+              {s.time&&<span style={{fontSize:11,fontWeight:700,color:tc}}>{formatTime(s.time)}{s.endTime&&` – ${formatTime(s.endTime)}`}</span>}
             </div>
             <div style={{fontSize:14,fontWeight:800,color:"#1a1a2e",lineHeight:1.3,marginBottom:4}}>{s.title}</div>
             {(s.room||s.building)&&<div style={{fontSize:11,color:"#6B6057"}}>{[s.room,s.building,s.floor].filter(Boolean).join(" · ")}</div>}
