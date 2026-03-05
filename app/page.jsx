@@ -31,8 +31,39 @@ function getDaysBetween(start,end) {
   while(cur<=last){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
   return days;
 }
-function loadLS(key,fb){try{const r=localStorage.getItem(key);return r?JSON.parse(r):fb;}catch{return fb;}}
-function saveLS(key,v){try{localStorage.setItem(key,JSON.stringify(v));}catch{}}
+// ── Supabase ──────────────────────────────────────────────────────────────────
+const SB_URL = "https://vffzqsgtbrhpveomnfvb.supabase.co";
+const SB_KEY = "sb_publishable_0w_tEqZefjyYL4Pc4Wcp3w_6Lzv7Ry3";
+const sbH = {
+  "apikey": SB_KEY,
+  "Authorization": `Bearer ${SB_KEY}`,
+  "Content-Type": "application/json",
+};
+
+async function sbGet(table) {
+  const r = await fetch(`${SB_URL}/rest/v1/${table}?select=*`, {headers: sbH});
+  return r.json();
+}
+async function sbUpsert(table, data) {
+  await fetch(`${SB_URL}/rest/v1/${table}`, {
+    method: "POST",
+    headers: {...sbH, "Prefer": "resolution=merge-duplicates"},
+    body: JSON.stringify(data),
+  });
+}
+async function sbDelete(table, id) {
+  await fetch(`${SB_URL}/rest/v1/${table}?id=eq.${id}`, {
+    method: "DELETE", headers: sbH,
+  });
+}
+
+// field mapping helpers
+const confToDB = (c) => ({id:1, name:c.name, subtitle:c.subtitle, location:c.location, start_date:c.startDate, end_date:c.endDate});
+const confFromDB = (r) => ({name:r.name, subtitle:r.subtitle, location:r.location, startDate:r.start_date, endDate:r.end_date});
+const sessionToDB = (s) => ({id:s.id, title:s.title, type:s.type, day:s.day, time:s.time, end_time:s.endTime||"", room:s.room||"", building:s.building||"", floor:s.floor||"", description:s.description||"", presenter_ids:s.presenterIds||[]});
+const sessionFromDB = (r) => ({...r, endTime:r.end_time, presenterIds:r.presenter_ids||[]});
+const attendeeToDB = (a) => ({id:a.id, name:a.name, affiliation:a.affiliation||"", role:a.role||"", email:a.email||"", phone:a.phone||"", website:a.website||"", days:a.days||[], notes:a.notes||""});
+const attendeeFromDB = (r) => ({...r});
 
 // ── Default data ───────────────────────────────────────────────────────────────
 const DEFAULT_CONF = { name:"AERA 2026", subtitle:"American Educational Research Association Annual Meeting", location:"Philadelphia, PA", startDate:"2026-04-08", endDate:"2026-04-12" };
@@ -392,17 +423,21 @@ export default function App(){
   const [saved,setSaved]=useState(false);
 
   useEffect(()=>{
-    setConf(loadLS("ua_conf",DEFAULT_CONF));
-    setSessions(loadLS("ua_sessions",DEFAULT_SESSIONS));
-    setAttendees(loadLS("ua_attendees",DEFAULT_ATTENDEES));
-    setReady(true);
+    async function load() {
+      try {
+        const [confRows, sessRows, attRows] = await Promise.all([
+          sbGet("conf_settings"),
+          sbGet("sessions"),
+          sbGet("attendees"),
+        ]);
+        if (confRows?.length) setConf(confFromDB(confRows[0]));
+        if (sessRows?.length) setSessions(sessRows.map(sessionFromDB));
+        if (attRows?.length) setAttendees(attRows.map(attendeeFromDB));
+      } catch(e) { console.error(e); }
+      setReady(true);
+    }
+    load();
   },[]);
-
-  useEffect(()=>{
-    if(!ready) return;
-    saveLS("ua_conf",conf); saveLS("ua_sessions",sessions); saveLS("ua_attendees",attendees);
-    setSaved(true); const t=setTimeout(()=>setSaved(false),1800); return()=>clearTimeout(t);
-  },[conf,sessions,attendees,ready]);
 
   const confDays=useMemo(()=>getDaysBetween(conf.startDate,conf.endDate),[conf.startDate,conf.endDate]);
   useEffect(()=>{if(confDays.length&&!confDays.includes(selectedDay))setSelectedDay(confDays[0]);},[confDays]);
@@ -427,10 +462,33 @@ export default function App(){
 
   const dayPeople=useMemo(()=>filteredPeople.filter(a=>a.days.includes(selectedDay)),[filteredPeople,selectedDay]);
 
-  const saveSession=(data)=>setSessions(prev=>prev.some(s=>s.id===data.id)?prev.map(s=>s.id===data.id?data:s):[...prev,data]);
-  const deleteSession=(id)=>setSessions(prev=>prev.filter(s=>s.id!==id));
-  const saveAttendee=(data)=>setAttendees(prev=>prev.some(a=>a.id===data.id)?prev.map(a=>a.id===data.id?data:a):[...prev,data]);
-  const deleteAttendee=(id)=>setAttendees(prev=>prev.filter(a=>a.id!==id));
+  const showSaved = () => { setSaved(true); setTimeout(()=>setSaved(false), 1800); };
+
+  const saveConf = async (data) => {
+    setConf(data);
+    await sbUpsert("conf_settings", confToDB(data));
+    showSaved();
+  };
+  const saveSession = async (data) => {
+    setSessions(prev => prev.some(s=>s.id===data.id) ? prev.map(s=>s.id===data.id?data:s) : [...prev,data]);
+    await sbUpsert("sessions", sessionToDB(data));
+    showSaved();
+  };
+  const deleteSession = async (id) => {
+    setSessions(prev => prev.filter(s=>s.id!==id));
+    await sbDelete("sessions", id);
+    showSaved();
+  };
+  const saveAttendee = async (data) => {
+    setAttendees(prev => prev.some(a=>a.id===data.id) ? prev.map(a=>a.id===data.id?data:a) : [...prev,data]);
+    await sbUpsert("attendees", attendeeToDB(data));
+    showSaved();
+  };
+  const deleteAttendee = async (id) => {
+    setAttendees(prev => prev.filter(a=>a.id!==id));
+    await sbDelete("attendees", id);
+    showSaved();
+  };
 
   if(!ready) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:UA.warmGray,fontSize:13,color:UA.blue}}>Loading...</div>;
 
@@ -666,7 +724,7 @@ export default function App(){
       {viewAttendee&&<AttendeeView attendee={viewAttendee} sessions={sessions} onClose={()=>setViewAttendee(null)} onEdit={a=>{setViewAttendee(null);setEditAttendee(a);}} isAdmin={isAdmin}/>}
       {isAdmin&&(editSession||showAddSession)&&<SessionForm session={editSession||null} confDays={confDays} attendees={attendees} onClose={()=>{setEditSession(null);setShowAddSession(false);}} onSave={saveSession} onDelete={deleteSession}/>}
       {isAdmin&&(editAttendee||showAddAttendee)&&<AttendeeForm attendee={editAttendee||null} confDays={confDays} onClose={()=>{setEditAttendee(null);setShowAddAttendee(false);}} onSave={saveAttendee} onDelete={deleteAttendee}/>}
-      {isAdmin&&showSettings&&<SettingsModal conf={conf} onClose={()=>setShowSettings(false)} onSave={c=>setConf(c)}/>}
+      {isAdmin&&showSettings&&<SettingsModal conf={conf} onClose={()=>setShowSettings(false)} onSave={saveConf}/>}
     </div>
   );
 }
