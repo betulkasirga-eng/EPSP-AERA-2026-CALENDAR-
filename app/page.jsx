@@ -45,7 +45,6 @@ const lbl = { fontSize:11,fontWeight:700,letterSpacing:1.5,color:"#9B8E7A",textT
 const secTitle = { fontSize:11,fontWeight:700,letterSpacing:2,color:"#9B8E7A",textTransform:"uppercase",marginBottom:8 };
 const SESSION_TYPES = ["Keynote","Paper Presentation","Panel","Workshop","Roundtable","Symposium","Poster","Social","Other"];
 
-// ── Session detail popup ──────────────────────────────────────────────────────
 function SessionDetail({ session, attendee, onClose }) {
   if (!session||!attendee) return null;
   const color = getColor(attendee.id);
@@ -93,7 +92,6 @@ function SessionDetail({ session, attendee, onClose }) {
   );
 }
 
-// ── Attendee view modal ───────────────────────────────────────────────────────
 function AttendeeView({ attendee, onClose, onEdit }) {
   const [sessDetail, setSessDetail] = useState(null);
   if (!attendee) return null;
@@ -159,7 +157,6 @@ function AttendeeView({ attendee, onClose, onEdit }) {
   );
 }
 
-// ── Session sub-form ──────────────────────────────────────────────────────────
 function SessionForm({ session, confDays, onSave, onBack }) {
   const [f,setF] = useState(session||{title:"",day:"",time:"",endTime:"",room:"",building:"",floor:"",description:"",type:"Paper Presentation"});
   const set = (k,v) => setF(p=>({...p,[k]:v}));
@@ -188,7 +185,7 @@ function SessionForm({ session, confDays, onSave, onBack }) {
       </div>
       <div><span style={lbl}>Floor / Level</span><input style={inp} value={f.floor} onChange={e=>set("floor",e.target.value)} placeholder="e.g. Level 2 / 3rd Floor"/></div>
       <div><span style={lbl}>Description / Details</span>
-        <textarea style={{...inp,resize:"vertical",minHeight:80}} value={f.description} onChange={e=>set("description",e.target.value)} placeholder="What is this session about? What will be presented?"/>
+        <textarea style={{...inp,resize:"vertical",minHeight:80}} value={f.description} onChange={e=>set("description",e.target.value)} placeholder="What is this session about?"/>
       </div>
       <div style={{display:"flex",gap:10,justifyContent:"flex-end",paddingTop:4}}>
         <button onClick={onBack} style={{padding:"9px 20px",borderRadius:8,border:"1.5px solid #E8E0D0",background:"none",color:"#9B8E7A",fontSize:13,cursor:"pointer"}}>← Back</button>
@@ -198,12 +195,11 @@ function SessionForm({ session, confDays, onSave, onBack }) {
   );
 }
 
-// ── Attendee form modal (add/edit) ────────────────────────────────────────────
 function AttendeeForm({ attendee, confDays, onClose, onSave, onDelete }) {
   const isNew = !attendee?.id;
   const blank = {name:"",affiliation:"",role:"",email:"",phone:"",website:"",days:[],sessions:[],notes:""};
   const [form,setForm] = useState(attendee?{...attendee,sessions:attendee.sessions.map(s=>({...s}))}:blank);
-  const [editingSess,setEditingSess] = useState(null); // null | {idx:number|"new", data:obj}
+  const [editingSess,setEditingSess] = useState(null);
   const set = (k,v) => setForm(f=>({...f,[k]:v}));
   const toggleDay = (d) => set("days",form.days.includes(d)?form.days.filter(x=>x!==d):[...form.days,d]);
 
@@ -287,7 +283,6 @@ function AttendeeForm({ attendee, confDays, onClose, onSave, onDelete }) {
   );
 }
 
-// ── Settings modal ────────────────────────────────────────────────────────────
 function Settings({ conf, onClose, onSave }) {
   const [f,setF] = useState({...conf});
   const set = (k,v) => setF(p=>({...p,[k]:v}));
@@ -319,30 +314,65 @@ function Settings({ conf, onClose, onSave }) {
   );
 }
 
+// ── localStorage helpers ──────────────────────────────────────────────────────
+function loadFromStorage(key, fallback) {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch { return fallback; }
+}
+function saveToStorage(key, value) {
+  try { localStorage.setItem(key, JSON.stringify(value)); } catch {}
+}
+
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App() {
-  const [conf,setConf] = useState(DEFAULT_CONF);
-  const [attendees,setAttendees] = useState(DEFAULT_ATTENDEES);
-  const [selectedDay,setSelectedDay] = useState(DEFAULT_CONF.startDate);
-  const [search,setSearch] = useState("");
-  const [view,setView] = useState("calendar");
-  const [viewModal,setViewModal] = useState(null);
-  const [editModal,setEditModal] = useState(null);
-  const [showAdd,setShowAdd] = useState(false);
-  const [showSettings,setShowSettings] = useState(false);
+  const [ready, setReady] = useState(false);
+  const [conf, setConf] = useState(DEFAULT_CONF);
+  const [attendees, setAttendees] = useState(DEFAULT_ATTENDEES);
+  const [selectedDay, setSelectedDay] = useState(DEFAULT_CONF.startDate);
+  const [search, setSearch] = useState("");
+  const [view, setView] = useState("calendar");
+  const [viewModal, setViewModal] = useState(null);
+  const [editModal, setEditModal] = useState(null);
+  const [showAdd, setShowAdd] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [saved, setSaved] = useState(false);
 
-  const confDays = useMemo(()=>getDaysBetween(conf.startDate,conf.endDate),[conf.startDate,conf.endDate]);
-  useEffect(()=>{ if(confDays.length&&!confDays.includes(selectedDay)) setSelectedDay(confDays[0]); },[confDays]);
+  // Load from localStorage on first render
+  useEffect(() => {
+    const storedConf = loadFromStorage("conf_settings", DEFAULT_CONF);
+    const storedAttendees = loadFromStorage("conf_attendees", DEFAULT_ATTENDEES);
+    setConf(storedConf);
+    setAttendees(storedAttendees);
+    setSelectedDay(storedConf.startDate);
+    setReady(true);
+  }, []);
 
-  const filtered = useMemo(()=>{
-    const q=search.toLowerCase();
-    return attendees.filter(a=>a.name.toLowerCase().includes(q)||(a.affiliation||"").toLowerCase().includes(q)||(a.role||"").toLowerCase().includes(q));
-  },[attendees,search]);
+  // Save whenever conf or attendees change (after initial load)
+  useEffect(() => {
+    if (!ready) return;
+    saveToStorage("conf_settings", conf);
+    saveToStorage("conf_attendees", attendees);
+    setSaved(true);
+    const t = setTimeout(() => setSaved(false), 1800);
+    return () => clearTimeout(t);
+  }, [conf, attendees, ready]);
 
-  const dayPeople = useMemo(()=>filtered.filter(a=>a.days.includes(selectedDay)),[filtered,selectedDay]);
+  const confDays = useMemo(() => getDaysBetween(conf.startDate, conf.endDate), [conf.startDate, conf.endDate]);
+  useEffect(() => { if (confDays.length && !confDays.includes(selectedDay)) setSelectedDay(confDays[0]); }, [confDays]);
 
-  const saveAttendee = (data) => setAttendees(prev=>prev.some(a=>a.id===data.id)?prev.map(a=>a.id===data.id?data:a):[...prev,data]);
-  const deleteAttendee = (id) => setAttendees(prev=>prev.filter(a=>a.id!==id));
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return attendees.filter(a => a.name.toLowerCase().includes(q) || (a.affiliation||"").toLowerCase().includes(q) || (a.role||"").toLowerCase().includes(q));
+  }, [attendees, search]);
+
+  const dayPeople = useMemo(() => filtered.filter(a => a.days.includes(selectedDay)), [filtered, selectedDay]);
+
+  const saveAttendee = (data) => setAttendees(prev => prev.some(a => a.id === data.id) ? prev.map(a => a.id === data.id ? data : a) : [...prev, data]);
+  const deleteAttendee = (id) => setAttendees(prev => prev.filter(a => a.id !== id));
+
+  if (!ready) return <div style={{display:"flex",alignItems:"center",justifyContent:"center",height:"100vh",background:"#F8F3EB",fontSize:14,color:"#9B8E7A"}}>Loading...</div>;
 
   return (
     <div style={{minHeight:"100vh",background:"#F8F3EB",fontFamily:"'DM Sans','Segoe UI',sans-serif",color:"#2C2416"}}>
@@ -350,12 +380,20 @@ export default function App() {
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=DM+Sans:wght@300;400;500;600;700&display=swap');
         @keyframes slideUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
+        @keyframes savedPop{0%{opacity:0;transform:translateY(4px)}20%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}
         *{box-sizing:border-box;margin:0;padding:0}
         input,select,textarea{font-family:'DM Sans',sans-serif}
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#D4C9B0;border-radius:3px}
       `}</style>
 
-      {/* ── Header ── */}
+      {/* Saved indicator */}
+      {saved && (
+        <div style={{position:"fixed",bottom:20,right:20,background:"#2C2416",color:"#F8F3EB",padding:"8px 16px",borderRadius:10,fontSize:12,fontWeight:600,zIndex:9999,animation:"savedPop 1.8s ease forwards"}}>
+          ✓ Saved
+        </div>
+      )}
+
+      {/* Header */}
       <div style={{background:"#2C2416"}}>
         <div style={{maxWidth:920,margin:"0 auto",padding:"16px 20px",display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
           <div>
@@ -372,7 +410,7 @@ export default function App() {
       </div>
 
       <div style={{maxWidth:920,margin:"0 auto",padding:"20px 16px"}}>
-        {/* ── Search + toggle ── */}
+        {/* Search + toggle */}
         <div style={{display:"flex",gap:10,marginBottom:16,flexWrap:"wrap"}}>
           <div style={{flex:1,minWidth:180,position:"relative"}}>
             <span style={{position:"absolute",left:11,top:"50%",transform:"translateY(-50%)",fontSize:14,color:"#C0B49A"}}>🔍</span>
@@ -388,7 +426,6 @@ export default function App() {
 
         {view==="calendar"?(
           <>
-            {/* Day tabs */}
             <div style={{display:"flex",gap:8,marginBottom:16,overflowX:"auto",paddingBottom:4}}>
               {confDays.map(day=>{
                 const cnt=attendees.filter(a=>a.days.includes(day)).length;
