@@ -437,6 +437,13 @@ function SearchBar({value,onChange,placeholder}){
 export default function App(){
   const [ready,setReady]=useState(false);
   const [isAdmin,setIsAdmin]=useState(false);
+  useEffect(()=>{
+    if(typeof window!=="undefined"){
+      setIsAdmin(sessionStorage.getItem("isAdmin")==="true");
+    }
+  },[]);
+  const handleAdminLogin = () => { setIsAdmin(true); sessionStorage.setItem("isAdmin","true"); };
+  const handleAdminLogout = () => { setIsAdmin(false); sessionStorage.removeItem("isAdmin"); };
   const [showLogin,setShowLogin]=useState(false);
   const [conf,setConf]=useState(DEFAULT_CONF);
   const [sessions,setSessions]=useState(DEFAULT_SESSIONS);
@@ -623,7 +630,7 @@ export default function App(){
                     <button onClick={()=>setShowSettings(true)} style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.85)",border:"none",padding:"7px 13px",borderRadius:4,fontSize:11,cursor:"pointer",fontWeight:700}}>⚙️ Settings</button>
                     {view==="sessions"&&<button onClick={()=>setShowAddSession(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 14px",borderRadius:4,fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>+ Add Session</button>}
                     {view==="people"&&<button onClick={()=>setShowAddAttendee(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 14px",borderRadius:4,fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>+ Add Person</button>}
-                    <button onClick={()=>setIsAdmin(false)} style={{background:"none",color:"rgba(255,255,255,0.35)",border:"1px solid rgba(255,255,255,0.12)",padding:"6px 10px",borderRadius:4,fontSize:11,cursor:"pointer"}}>Log out</button>
+                    <button onClick={handleAdminLogout} style={{background:"none",color:"rgba(255,255,255,0.35)",border:"1px solid rgba(255,255,255,0.12)",padding:"6px 10px",borderRadius:4,fontSize:11,cursor:"pointer"}}>Log out</button>
                   </>
                 ):(
                   <button onClick={()=>setShowLogin(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 13px",borderRadius:4,fontSize:11,cursor:"pointer",fontWeight:700,letterSpacing:0.3}}>🔒 Admin Login</button>
@@ -764,7 +771,7 @@ export default function App(){
       </div>
 
       {/* ── Modals ── */}
-      {showLogin&&<AdminLogin onClose={()=>setShowLogin(false)} onSuccess={()=>setIsAdmin(true)}/>}
+      {showLogin&&<AdminLogin onClose={()=>setShowLogin(false)} onSuccess={handleAdminLogin}/>}
       {viewSession&&<SessionDetail session={viewSession} attendees={attendees} onClose={()=>setViewSession(null)} onEdit={s=>{setViewSession(null);setEditSession(s);}} isAdmin={isAdmin}/>}
       {viewAttendee&&<AttendeeView attendee={viewAttendee} sessions={sessions} onClose={()=>setViewAttendee(null)} onEdit={a=>{setViewAttendee(null);setEditAttendee(a);}} isAdmin={isAdmin}/>}
       {isAdmin&&(editSession||showAddSession)&&<SessionForm session={editSession||null} confDays={confDays} attendees={attendees} onClose={()=>{setEditSession(null);setShowAddSession(false);}} onSave={saveSession} onDelete={deleteSession}/>}
