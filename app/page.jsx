@@ -53,7 +53,7 @@ const DEFAULT_ATTENDEES = [
 ];
 
 // ── Shared styles ─────────────────────────────────────────────────────────────
-const inp = {width:"100%",padding:"9px 12px",borderRadius:6,border:"1.5px solid #D0C8BE",background:"#fff",fontSize:13,color:"#1a1a2e",outline:"none",boxSizing:"border-box",fontFamily:"inherit"};
+const inp = {width:"100%",padding:"9px 12px",borderRadius:6,border:"1.5px solid #D0C8BE",background:"#fff",fontSize:13,color:"#1a1a2e",outline:"none",boxSizing:"border-box",fontFamily:"'proxima-nova','Helvetica Neue',Arial,sans-serif"};
 const lbl = {fontSize:10,fontWeight:700,letterSpacing:1.8,color:"#6B6057",textTransform:"uppercase",display:"block",marginBottom:5};
 const secT = {fontSize:10,fontWeight:700,letterSpacing:1.8,color:"#6B6057",textTransform:"uppercase",marginBottom:8};
 const SESSION_TYPES = ["Keynote","Paper Presentation","Panel","Workshop","Roundtable","Symposium","Poster","Social","Other"];
@@ -79,7 +79,7 @@ function AdminLogin({onClose,onSuccess}){
           </div>
           <div style={{display:"flex",gap:8,justifyContent:"flex-end"}}>
             <button onClick={onClose} style={{padding:"8px 18px",borderRadius:6,border:"1.5px solid #D0C8BE",background:"none",color:"#6B6057",fontSize:12,cursor:"pointer"}}>Cancel</button>
-            <button onClick={go} style={{padding:"8px 18px",borderRadius:6,border:"none",background:UA.blue,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Login</button>
+            <button onClick={go} style={{padding:"8px 18px",borderRadius:6,border:"none",background:UA.red,color:"#fff",fontSize:12,fontWeight:700,cursor:"pointer"}}>Login</button>
           </div>
         </div>
       </div>
@@ -314,8 +314,7 @@ function AttendeeForm({attendee,confDays,onClose,onSave,onDelete}){
             <div style={{display:"flex",gap:7,flexWrap:"wrap"}}>
               {confDays.map(d=>(
                 <button key={d} onClick={()=>toggleDay(d)} style={{padding:"4px 13px",borderRadius:20,border:"1.5px solid",borderColor:f.days.includes(d)?UA.red:"#D0C8BE",background:f.days.includes(d)?UA.red:"transparent",color:f.days.includes(d)?"#fff":"#6B6057",fontSize:11,fontWeight:700,cursor:"pointer"}}>{formatDateShort(d)}</button>
-              ))}
-            </div>
+              ))}            </div>
           </div>
           <div><span style={lbl}>Notes</span><textarea style={{...inp,resize:"vertical",minHeight:55}} value={f.notes} onChange={e=>set("notes",e.target.value)} placeholder="Any notes..."/></div>
           <div style={{display:"flex",gap:8,justifyContent:"space-between",paddingTop:8,borderTop:"1px solid #E8E0D4"}}>
@@ -477,52 +476,69 @@ export default function App(){
   };
 
   return(
-    <div style={{minHeight:"100vh",background:UA.warmGray,fontFamily:"'DM Sans','Segoe UI',sans-serif",color:"#1a1a2e"}}>
+    <div style={{minHeight:"100vh",background:UA.warmGray,fontFamily:"'proxima-nova','Helvetica Neue',Arial,sans-serif",color:"#1a1a2e"}}>
       <style>{`
-        @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
+        @import url('https://use.typekit.net/emv3zbo.css');
         @keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
         @keyframes fadeIn{from{opacity:0}to{opacity:1}}
         @keyframes savedPop{0%{opacity:0;transform:translateY(4px)}20%{opacity:1;transform:translateY(0)}80%{opacity:1}100%{opacity:0}}
         *{box-sizing:border-box;margin:0;padding:0}
-        input,select,textarea{font-family:'DM Sans',sans-serif}
+        body{font-family:'proxima-nova','Helvetica Neue',Arial,sans-serif}
+        input,select,textarea{font-family:'proxima-nova','Helvetica Neue',Arial,sans-serif}
         ::-webkit-scrollbar{width:5px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:#C0B4A0;border-radius:3px}
       `}</style>
 
-      {saved&&<div style={{position:"fixed",bottom:20,right:20,background:UA.blue,color:"#fff",padding:"7px 15px",borderRadius:8,fontSize:11,fontWeight:700,zIndex:9999,animation:"savedPop 1.8s ease forwards",letterSpacing:0.5}}>✓ SAVED</div>}
+      {saved&&<div style={{position:"fixed",bottom:20,right:20,background:UA.red,color:"#fff",padding:"7px 15px",borderRadius:4,fontSize:11,fontWeight:700,zIndex:9999,animation:"savedPop 1.8s ease forwards",letterSpacing:0.8}}>✓ SAVED</div>}
 
       {/* ── Header ── */}
-      <div style={{background:UA.blue}}>
-        <div style={{maxWidth:960,margin:"0 auto",padding:"14px 20px"}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
-            <div style={{display:"flex",alignItems:"center",gap:16}}>
-              <img src="https://cdn.digital.arizona.edu/logos/v1.0.0/ua_wordmark_line_logo_white_rgb.min.svg" alt="University of Arizona" style={{height:30,flexShrink:0}}/>
-              <div style={{width:1,height:30,background:"rgba(255,255,255,0.2)"}}/>
-              <div>
-                <div style={{fontSize:9,letterSpacing:3,textTransform:"uppercase",color:UA.sky,fontWeight:700,marginBottom:2}}>{conf.location}</div>
-                <div style={{fontSize:17,fontWeight:800,color:"#fff",lineHeight:1.2}}>{conf.name}</div>
-                {conf.subtitle&&<div style={{fontSize:10,color:"rgba(255,255,255,0.5)",marginTop:1}}>{conf.subtitle}</div>}
+      <div>
+        {/* Red top stripe */}
+        <div style={{background:UA.red,height:5}}/>
+        <div style={{background:UA.blue}}>
+          <div style={{maxWidth:960,margin:"0 auto",padding:"14px 20px"}}>
+            <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",flexWrap:"wrap",gap:10}}>
+              <div style={{display:"flex",alignItems:"center",gap:14}}>
+                {/* Block A + Wordmark stacked */}
+                <img
+                  src="https://cdn.digital.arizona.edu/logos/v1.0.0/ua_block_rgb.min.svg"
+                  alt="UA Block A"
+                  style={{height:44,flexShrink:0}}
+                  onError={e=>{e.target.style.display="none";}}
+                />
+                <div style={{width:1,height:36,background:"rgba(255,255,255,0.18)"}}/>
+                <div>
+                  <div style={{fontSize:9,letterSpacing:3,textTransform:"uppercase",color:UA.sky,fontWeight:700,marginBottom:2}}>{conf.location}</div>
+                  <div style={{fontSize:18,fontWeight:900,color:"#fff",lineHeight:1.15,letterSpacing:0.2}}>{conf.name}</div>
+                  {conf.subtitle&&<div style={{fontSize:10,color:"rgba(255,255,255,0.45)",marginTop:1}}>{conf.subtitle}</div>}
+                </div>
+              </div>
+              <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
+                <div style={{fontSize:11,color:"rgba(255,255,255,0.35)",background:"rgba(255,255,255,0.07)",padding:"3px 10px",borderRadius:4}}>{sessions.length} sessions · {attendees.length} people</div>
+                {isAdmin?(
+                  <>
+                    <span style={{fontSize:10,color:"#fff",background:UA.leaf,padding:"3px 9px",borderRadius:4,fontWeight:700,letterSpacing:0.5}}>🔓 ADMIN</span>
+                    <button onClick={()=>setShowSettings(true)} style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.85)",border:"none",padding:"7px 13px",borderRadius:4,fontSize:11,cursor:"pointer",fontWeight:700}}>⚙️ Settings</button>
+                    {view==="sessions"&&<button onClick={()=>setShowAddSession(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 14px",borderRadius:4,fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>+ Add Session</button>}
+                    {view==="people"&&<button onClick={()=>setShowAddAttendee(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 14px",borderRadius:4,fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:0.5}}>+ Add Person</button>}
+                    <button onClick={()=>setIsAdmin(false)} style={{background:"none",color:"rgba(255,255,255,0.35)",border:"1px solid rgba(255,255,255,0.12)",padding:"6px 10px",borderRadius:4,fontSize:11,cursor:"pointer"}}>Log out</button>
+                  </>
+                ):(
+                  <button onClick={()=>setShowLogin(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 13px",borderRadius:4,fontSize:11,cursor:"pointer",fontWeight:700,letterSpacing:0.3}}>🔒 Admin Login</button>
+                )}
               </div>
             </div>
-            <div style={{display:"flex",gap:7,alignItems:"center",flexWrap:"wrap"}}>
-              <div style={{fontSize:11,color:"rgba(255,255,255,0.4)",background:"rgba(255,255,255,0.08)",padding:"3px 10px",borderRadius:6}}>{sessions.length} sessions · {attendees.length} people</div>
-              {isAdmin?(
-                <>
-                  <span style={{fontSize:10,color:UA.leaf,background:"rgba(112,184,101,0.15)",padding:"3px 9px",borderRadius:6,fontWeight:700,letterSpacing:0.5}}>🔓 ADMIN</span>
-                  <button onClick={()=>setShowSettings(true)} style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.8)",border:"none",padding:"6px 12px",borderRadius:6,fontSize:11,cursor:"pointer",fontWeight:600}}>⚙️ Settings</button>
-                  {view==="sessions"&&<button onClick={()=>setShowAddSession(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 14px",borderRadius:6,fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:0.3}}>+ Add Session</button>}
-                  {view==="people"&&<button onClick={()=>setShowAddAttendee(true)} style={{background:UA.red,color:"#fff",border:"none",padding:"7px 14px",borderRadius:6,fontSize:11,fontWeight:800,cursor:"pointer",letterSpacing:0.3}}>+ Add Person</button>}
-                  <button onClick={()=>setIsAdmin(false)} style={{background:"none",color:"rgba(255,255,255,0.4)",border:"1px solid rgba(255,255,255,0.15)",padding:"6px 10px",borderRadius:6,fontSize:11,cursor:"pointer"}}>Log out</button>
-                </>
-              ):(
-                <button onClick={()=>setShowLogin(true)} style={{background:"rgba(255,255,255,0.1)",color:"rgba(255,255,255,0.7)",border:"1px solid rgba(255,255,255,0.15)",padding:"6px 12px",borderRadius:6,fontSize:11,cursor:"pointer",fontWeight:600}}>🔒 Admin</button>
-              )}
+            {/* Nav tabs */}
+            <div style={{display:"flex",gap:0,marginTop:14,borderBottom:`2px solid ${UA.red}`}}>
+              {[["sessions","Sessions"],["calendar","By Day"],["people","People"]].map(([v,l])=>(
+                <button key={v} onClick={()=>setView(v)} style={{padding:"8px 18px",border:"none",background:view===v?UA.red:"transparent",color:view===v?"#fff":"rgba(255,255,255,0.5)",fontSize:12,fontWeight:view===v?800:500,cursor:"pointer",letterSpacing:0.5,textTransform:"uppercase",transition:"all 0.13s",borderRadius:"4px 4px 0 0"}}>{l}</button>
+              ))}
             </div>
           </div>
-          {/* Nav tabs */}
-          <div style={{display:"flex",gap:2,marginTop:14,borderBottom:"1px solid rgba(255,255,255,0.1)"}}>
-            {[["sessions","📋 Sessions"],["calendar","📅 By Day"],["people","👤 People"]].map(([v,l])=>(
-              <button key={v} onClick={()=>setView(v)} style={{padding:"8px 16px",border:"none",background:"none",color:view===v?"#fff":"rgba(255,255,255,0.45)",fontSize:12,fontWeight:view===v?800:500,cursor:"pointer",borderBottom:view===v?`2px solid ${UA.red}`:"2px solid transparent",marginBottom:-1,transition:"all 0.14s",letterSpacing:0.3}}>{l}</button>
-            ))}
+        </div>
+        {/* UA wordmark strip below header */}
+        <div style={{background:UA.midnight,padding:"5px 20px"}}>
+          <div style={{maxWidth:960,margin:"0 auto"}}>
+            <img src="https://cdn.digital.arizona.edu/logos/v1.0.0/ua_wordmark_line_logo_white_rgb.min.svg" alt="The University of Arizona" style={{height:16,opacity:0.55}}/>
           </div>
         </div>
       </div>
@@ -542,7 +558,7 @@ export default function App(){
               return(
                 <div key={day} style={{marginBottom:24}}>
                   <div style={{display:"flex",alignItems:"center",gap:10,marginBottom:10}}>
-                    <div style={{fontSize:13,fontWeight:800,color:UA.blue,letterSpacing:0.3}}>{formatDateLong(day)}</div>
+                    <div style={{fontSize:13,fontWeight:800,color:UA.red,letterSpacing:0.3}}>{formatDateLong(day)}</div>
                     <div style={{flex:1,height:1,background:"#D0C8BE"}}/>
                     <div style={{fontSize:11,color:"#9B8E7A",fontWeight:600}}>{ds.length} session{ds.length!==1?"s":""}</div>
                   </div>
@@ -573,7 +589,7 @@ export default function App(){
                 const cnt=sessions.filter(s=>s.day===day).length;
                 const active=selectedDay===day;
                 return(
-                  <button key={day} onClick={()=>setSelectedDay(day)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:active?UA.blue:"#fff",color:active?"#fff":"#5A4E3A",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,boxShadow:active?"0 3px 10px rgba(12,35,75,0.25)":"none",transition:"all 0.13s"}}>
+                  <button key={day} onClick={()=>setSelectedDay(day)} style={{padding:"8px 16px",borderRadius:8,border:"none",background:active?UA.red:"#fff",color:active?"#fff":"#5A4E3A",cursor:"pointer",whiteSpace:"nowrap",flexShrink:0,boxShadow:active?"0 3px 10px rgba(171,5,32,0.3)":"none",transition:"all 0.13s"}}>
                     <div style={{fontSize:12,fontWeight:800}}>{formatDateShort(day)}</div>
                     <div style={{fontSize:9,opacity:0.55,marginTop:1}}>{cnt} sessions</div>
                   </button>
@@ -581,7 +597,7 @@ export default function App(){
               })}
             </div>
             <div style={{marginBottom:14}}>
-              <div style={{fontSize:17,fontWeight:800,color:UA.blue}}>{formatDateLong(selectedDay)}</div>
+              <div style={{fontSize:17,fontWeight:800,color:UA.red}}>{formatDateLong(selectedDay)}</div>
               <div style={{fontSize:11,color:"#9B8E7A",marginTop:2}}>{daySessions.length} session{daySessions.length!==1?"s":""}·{attendees.filter(a=>a.days.includes(selectedDay)).length} attendees</div>
             </div>
             {daySessions.length===0?(
