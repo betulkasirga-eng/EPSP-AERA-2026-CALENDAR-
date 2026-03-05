@@ -67,8 +67,8 @@ async function sbDelete(table, id) {
 // field mapping helpers
 const confToDB = (c) => ({id:1, name:c.name, subtitle:c.subtitle, location:c.location, start_date:c.startDate, end_date:c.endDate});
 const confFromDB = (r) => ({name:r.name, subtitle:r.subtitle, location:r.location, startDate:r.start_date, endDate:r.end_date});
-const sessionToDB = (s) => ({id:s.id, title:s.title, type:s.type, day:s.day, time:s.time, end_time:s.endTime||"", room:s.room||"", building:s.building||"", floor:s.floor||"", description:s.description||"", presenter_ids:s.presenterIds||[]});
-const sessionFromDB = (r) => ({...r, endTime:r.end_time, presenterIds:r.presenter_ids||[]});
+const sessionToDB = (s) => ({id:s.id, title:s.title, type:s.type, day:s.day, time:s.time, end_time:s.endTime||"", room:s.room||"", building:s.building||"", floor:s.floor||"", description:s.description||"", co_presenters:s.coPresenters||"", presenter_ids:s.presenterIds||[]});
+const sessionFromDB = (r) => ({...r, endTime:r.end_time, coPresenters:r.co_presenters||"", presenterIds:r.presenter_ids||[]});
 const attendeeToDB = (a) => ({id:a.id, name:a.name, affiliation:a.affiliation||"", role:a.role||"", email:a.email||"", phone:a.phone||"", website:a.website||"", days:a.days||[], notes:a.notes||""});
 const attendeeFromDB = (r) => ({...r});
 
@@ -132,7 +132,7 @@ function SessionDetail({session,attendees,onClose,onEdit,isAdmin}){
   const presenters=attendees.filter(a=>session.presenterIds?.includes(a.id));
   return(
     <div onClick={onClose} style={{position:"fixed",inset:0,background:"rgba(12,35,75,0.82)",display:"flex",alignItems:"center",justifyContent:"center",zIndex:1300,padding:20,backdropFilter:"blur(4px)"}}>
-      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:12,maxWidth:520,width:"100%",overflow:"hidden",boxShadow:"0 32px 80px rgba(0,0,0,0.3)",animation:"slideUp 0.22s ease"}}>
+      <div onClick={e=>e.stopPropagation()} style={{background:"#fff",borderRadius:12,maxWidth:520,width:"100%",maxHeight:"88vh",overflow:"auto",boxShadow:"0 32px 80px rgba(0,0,0,0.3)",animation:"slideUp 0.22s ease"}}>
         <div style={{background:`linear-gradient(135deg,${tc},${tc}dd)`,padding:"22px 28px",position:"relative"}}>
           <div style={{display:"flex",gap:8,position:"absolute",top:12,right:12}}>
             {isAdmin&&<button onClick={()=>{onClose();onEdit(session);}} style={{background:"rgba(255,255,255,0.22)",border:"none",color:"#fff",padding:"4px 10px",borderRadius:6,cursor:"pointer",fontSize:11,fontWeight:700}}>✏️ Edit</button>}
@@ -178,6 +178,25 @@ function SessionDetail({session,attendees,onClose,onEdit,isAdmin}){
                     </div>
                   );
                 })}
+                {session.coPresenters&&session.coPresenters.split(",").map((cp,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#F0EBF8",borderRadius:8,padding:"8px 12px"}}>
+                    <div style={{width:32,height:32,borderRadius:"50%",background:"#6B5EA720",color:"#6B5EA7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>👤</div>
+                    <div style={{fontSize:13,fontWeight:600,color:"#3a3a5c"}}>{cp.trim()}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          {!presenters.length&&session.coPresenters&&(
+            <div>
+              <div style={secT}>Presenters</div>
+              <div style={{display:"flex",flexDirection:"column",gap:6}}>
+                {session.coPresenters.split(",").map((cp,i)=>(
+                  <div key={i} style={{display:"flex",alignItems:"center",gap:10,background:"#F0EBF8",borderRadius:8,padding:"8px 12px"}}>
+                    <div style={{width:32,height:32,borderRadius:"50%",background:"#6B5EA720",color:"#6B5EA7",display:"flex",alignItems:"center",justifyContent:"center",fontSize:11,fontWeight:800,flexShrink:0}}>👤</div>
+                    <div style={{fontSize:13,fontWeight:600,color:"#3a3a5c"}}>{cp.trim()}</div>
+                  </div>
+                ))}
               </div>
             </div>
           )}
@@ -260,7 +279,7 @@ function AttendeeView({attendee,sessions,onClose,onEdit,isAdmin}){
 // ── Session form (add/edit) ────────────────────────────────────────────────────
 function SessionForm({session,confDays,attendees,onClose,onSave,onDelete}){
   const isNew=!session?.id;
-  const [f,setF]=useState(session?{...session}:{title:"",type:"Paper Presentation",day:"",time:"",endTime:"",room:"",building:"",floor:"",description:"",presenterIds:[]});
+  const [f,setF]=useState(session?{...session}:{title:"",type:"Paper Presentation",day:"",time:"",endTime:"",room:"",building:"",floor:"",description:"",coPresenters:"",presenterIds:[]});
   const set=(k,v)=>setF(p=>({...p,[k]:v}));
   const toggleP=(id)=>set("presenterIds",f.presenterIds.includes(id)?f.presenterIds.filter(x=>x!==id):[...f.presenterIds,id]);
   const handleSave=()=>{if(!f.title)return;onSave({...f,id:f.id||"S"+Date.now()});onClose();};
@@ -293,6 +312,11 @@ function SessionForm({session,confDays,attendees,onClose,onSave,onDelete}){
           </div>
           <div><span style={lbl}>Floor / Level</span><input style={inp} value={f.floor} onChange={e=>set("floor",e.target.value)} placeholder="e.g. Level 2"/></div>
           <div><span style={lbl}>Description</span><textarea style={{...inp,resize:"vertical",minHeight:70}} value={f.description} onChange={e=>set("description",e.target.value)} placeholder="What is this session about?"/></div>
+          <div>
+            <span style={lbl}>Co-Presenters (outside group)</span>
+            <input style={inp} value={f.coPresenters||""} onChange={e=>set("coPresenters",e.target.value)} placeholder="e.g. John Smith (Harvard), Jane Doe (UCLA)"/>
+            <div style={{fontSize:10,color:"#9B8E7A",marginTop:4}}>Grubun dışından sunum yapanlar için</div>
+          </div>
           <div>
             <span style={lbl}>Presenters / Attendees in This Session</span>
             <div style={{display:"flex",gap:7,flexWrap:"wrap",marginTop:2}}>
@@ -534,6 +558,20 @@ export default function App(){
                 </div>
               );
             })}
+            {s.coPresenters&&s.coPresenters.split(",").map((cp,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:5,background:"#F0EBF8",borderRadius:20,padding:"3px 9px"}}>
+                <span style={{fontSize:11,fontWeight:600,color:"#6B5EA7"}}>👤 {cp.trim()}</span>
+              </div>
+            ))}
+          </div>
+        )}
+        {!presenters.length&&s.coPresenters&&(
+          <div style={{marginTop:10,display:"flex",gap:5,flexWrap:"wrap"}}>
+            {s.coPresenters.split(",").map((cp,i)=>(
+              <div key={i} style={{display:"flex",alignItems:"center",gap:5,background:"#F0EBF8",borderRadius:20,padding:"3px 9px"}}>
+                <span style={{fontSize:11,fontWeight:600,color:"#6B5EA7"}}>👤 {cp.trim()}</span>
+              </div>
+            ))}
           </div>
         )}
       </div>
