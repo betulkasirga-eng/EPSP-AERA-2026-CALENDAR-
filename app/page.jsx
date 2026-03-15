@@ -38,7 +38,19 @@ function getDaysBetween(start,end) {
   while(cur<=last){days.push(cur.toISOString().slice(0,10));cur.setDate(cur.getDate()+1);}
   return days;
 }
-// ── Supabase ──────────────────────────────────────────────────────────────────
+function renderNotes(text) {
+  if (!text) return null;
+  const urlRegex = /(https?:\/\/[^\s]+)/g;
+  const parts = text.split(urlRegex);
+  return parts.map((part, i) =>
+    urlRegex.test(part)
+      ? <a key={i} href={part} target="_blank" rel="noopener noreferrer"
+          style={{color:"#1E5288",wordBreak:"break-all",display:"block",marginTop:2}}
+          onClick={e=>e.stopPropagation()}
+        >{part}</a>
+      : <span key={i} style={{whiteSpace:"pre-wrap"}}>{part}</span>
+  );
+}
 const SB_URL = "https://vffzqsgtbrhpveomnfvb.supabase.co";
 const SB_KEY = "sb_publishable_0w_tEqZefjyYL4Pc4Wcp3w_6Lzv7Ry3";
 const sbH = {
@@ -273,7 +285,7 @@ function AttendeeView({attendee,sessions,onClose,onEdit,isAdmin}){
             {attendee.notes&&(
               <div>
                 <div style={secT}>Notes</div>
-                <div style={{fontSize:12,color:"#3a3a5c",lineHeight:1.65,background:UA.warmGray,padding:"10px 13px",borderRadius:8}}>{attendee.notes}</div>
+                <div style={{fontSize:12,color:"#3a3a5c",lineHeight:1.65,background:UA.warmGray,padding:"10px 13px",borderRadius:8,wordBreak:"break-word"}}>{renderNotes(attendee.notes)}</div>
               </div>
             )}
           </div>
