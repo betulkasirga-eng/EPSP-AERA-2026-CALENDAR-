@@ -508,7 +508,7 @@ export default function App(){
   // People filtered
   const filteredPeople=useMemo(()=>attendees.filter(a=>
     a.name.toLowerCase().includes(q)||(a.affiliation||"").toLowerCase().includes(q)||(a.role||"").toLowerCase().includes(q)
-  ),[attendees,q]);
+  ).sort((a,b)=>a.name.localeCompare(b.name)),[attendees,q]);
 
   const dayPeople=useMemo(()=>filteredPeople.filter(a=>a.days.includes(selectedDay)),[filteredPeople,selectedDay]);
 
@@ -780,6 +780,15 @@ export default function App(){
             )}
           </>
         )}
+      </div>
+
+      {/* ── Footer ── */}
+      <div style={{background:UA.midnight,marginTop:40,padding:"18px 20px",textAlign:"center"}}>
+        <div style={{maxWidth:960,margin:"0 auto",display:"flex",alignItems:"center",justifyContent:"center",gap:8}}>
+          <img src="https://cdn.digital.arizona.edu/logos/v1.0.0/ua_wordmark_line_logo_white_rgb.min.svg" alt="UA" style={{height:12,opacity:0.35}}/>
+          <span style={{fontSize:11,color:"rgba(255,255,255,0.3)"}}>·</span>
+          <span style={{fontSize:11,color:"rgba(255,255,255,0.4)"}}>Built by <span style={{color:"rgba(255,255,255,0.65)",fontWeight:700}}>Betul Ozel</span></span>
+        </div>
       </div>
 
       {/* ── Modals ── */}
