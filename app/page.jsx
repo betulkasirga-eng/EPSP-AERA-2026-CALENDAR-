@@ -508,7 +508,10 @@ export default function App(){
   // People filtered
   const filteredPeople=useMemo(()=>attendees.filter(a=>
     a.name.toLowerCase().includes(q)||(a.affiliation||"").toLowerCase().includes(q)||(a.role||"").toLowerCase().includes(q)
-  ).sort((a,b)=>a.name.localeCompare(b.name)),[attendees,q]);
+  ).sort((a,b)=>{
+    const lastName = n => n.trim().split(" ").slice(-1)[0].toLowerCase();
+    return lastName(a.name).localeCompare(lastName(b.name));
+  }),[attendees,q]);
 
   const dayPeople=useMemo(()=>filteredPeople.filter(a=>a.days.includes(selectedDay)),[filteredPeople,selectedDay]);
 
