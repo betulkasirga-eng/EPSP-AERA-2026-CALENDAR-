@@ -494,6 +494,62 @@ function AwardForm({award,onClose,onSave,onDelete}){
   );
 }
 
+// ── Session card ──────────────────────────────────────────────────────────────
+function SessionCard({s,attendees,isAdmin,setViewSession,setEditSession,setViewAttendee}){
+  const tc=TYPE_COLORS[s.type]||UA.azurite;
+  const presenters=attendees.filter(a=>s.presenterIds?.includes(a.id));
+  return(
+    <div onClick={()=>setViewSession(s)} style={{background:"#fff",borderRadius:10,padding:"14px 16px",cursor:"pointer",transition:"all 0.14s",boxShadow:"0 1px 6px rgba(12,35,75,0.07)",borderLeft:`4px solid ${tc}`,animation:"fadeIn 0.18s ease"}}
+      onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(12,35,75,0.13)";}}
+      onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 1px 6px rgba(12,35,75,0.07)";}}
+    >
+      <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
+        <div style={{flex:1}}>
+          <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
+            {s.type&&<span style={{fontSize:9,background:tc+"18",color:tc,padding:"2px 7px",borderRadius:8,fontWeight:800,letterSpacing:0.8}}>{s.type.toUpperCase()}</span>}
+            {s.time&&<span style={{fontSize:11,fontWeight:700,color:tc}}>{formatTime(s.time, !!s.endTime)}{s.endTime&&` – ${formatTime(s.endTime)}`}</span>}
+          </div>
+          <div style={{fontSize:14,fontWeight:800,color:"#1a1a2e",lineHeight:1.3,marginBottom:4}}>{s.title}</div>
+          {(s.room||s.building)&&<div style={{fontSize:11,color:"#6B6057"}}>{[s.room,s.building,s.floor].filter(Boolean).join(" · ")}</div>}
+        </div>
+        <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0}}>
+          {isAdmin&&<button onClick={e=>{e.stopPropagation();setEditSession(s);}} style={{background:"none",border:"none",fontSize:13,cursor:"pointer",color:"#C0B49A"}}>✏️</button>}
+        </div>
+      </div>
+      {presenters.length>0&&(
+        <div style={{marginTop:10,display:"flex",gap:5,flexWrap:"wrap"}}>
+          {presenters.map(p=>{
+            const pc=getColor(p.id);
+            return(
+              <div key={p.id} onClick={e=>{e.stopPropagation();setViewAttendee(p);}} style={{display:"flex",alignItems:"center",gap:5,background:UA.warmGray,borderRadius:20,padding:"3px 9px 3px 4px",cursor:"pointer",transition:"background 0.1s"}}
+                onMouseEnter={e=>e.currentTarget.style.background="#EBE0D2"}
+                onMouseLeave={e=>e.currentTarget.style.background=UA.warmGray}
+              >
+                <div style={{width:20,height:20,borderRadius:"50%",background:pc+"20",color:pc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800}}>{initials(p.name)}</div>
+                <span style={{fontSize:11,fontWeight:600,color:"#3a3a5c"}}>{p.name}</span>
+              </div>
+            );
+          })}
+          {s.coPresenters&&s.coPresenters.split(",").map((cp,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:5,background:"#F0EBF8",borderRadius:20,padding:"3px 9px"}}>
+              <span style={{fontSize:11,fontWeight:600,color:"#6B5EA7"}}>👤 {cp.trim()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {!presenters.length&&s.coPresenters&&(
+        <div style={{marginTop:10,display:"flex",gap:5,flexWrap:"wrap"}}>
+          {s.coPresenters.split(",").map((cp,i)=>(
+            <div key={i} style={{display:"flex",alignItems:"center",gap:5,background:"#F0EBF8",borderRadius:20,padding:"3px 9px"}}>
+              <span style={{fontSize:11,fontWeight:600,color:"#6B5EA7"}}>👤 {cp.trim()}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── Search bar ────────────────────────────────────────────────────────────────
 function SearchBar({value,onChange,placeholder}){
   return(
@@ -508,14 +564,11 @@ function SearchBar({value,onChange,placeholder}){
 
 // ── Main App ──────────────────────────────────────────────────────────────────
 export default function App(){
-  const [mounted,setMounted]=useState(false);
   const [ready,setReady]=useState(false);
   const [isAdmin,setIsAdmin]=useState(false);
   useEffect(()=>{
-    setMounted(true);
     setIsAdmin(sessionStorage.getItem("isAdmin")==="true");
   },[]);
-  if(!mounted) return null;
   const handleAdminLogin = () => { setIsAdmin(true); sessionStorage.setItem("isAdmin","true"); };
   const handleAdminLogout = () => { setIsAdmin(false); sessionStorage.removeItem("isAdmin"); };
   const [showLogin,setShowLogin]=useState(false);
@@ -622,63 +675,10 @@ export default function App(){
     showSaved();
   };
 
-  const SessionCard=({s})=>{
-    const tc=TYPE_COLORS[s.type]||UA.azurite;
-    const presenters=attendees.filter(a=>s.presenterIds?.includes(a.id));
-    return(
-      <div onClick={()=>setViewSession(s)} style={{background:"#fff",borderRadius:10,padding:"14px 16px",cursor:"pointer",transition:"all 0.14s",boxShadow:"0 1px 6px rgba(12,35,75,0.07)",borderLeft:`4px solid ${tc}`,animation:"fadeIn 0.18s ease"}}
-        onMouseEnter={e=>{e.currentTarget.style.transform="translateY(-1px)";e.currentTarget.style.boxShadow="0 4px 16px rgba(12,35,75,0.13)";}}
-        onMouseLeave={e=>{e.currentTarget.style.transform="translateY(0)";e.currentTarget.style.boxShadow="0 1px 6px rgba(12,35,75,0.07)";}}
-      >
-        <div style={{display:"flex",justifyContent:"space-between",alignItems:"flex-start",gap:10}}>
-          <div style={{flex:1}}>
-            <div style={{display:"flex",gap:6,alignItems:"center",marginBottom:5,flexWrap:"wrap"}}>
-              {s.type&&<span style={{fontSize:9,background:tc+"18",color:tc,padding:"2px 7px",borderRadius:8,fontWeight:800,letterSpacing:0.8}}>{s.type.toUpperCase()}</span>}
-              {s.time&&<span style={{fontSize:11,fontWeight:700,color:tc}}>{formatTime(s.time, !!s.endTime)}{s.endTime&&` – ${formatTime(s.endTime)}`}</span>}
-            </div>
-            <div style={{fontSize:14,fontWeight:800,color:"#1a1a2e",lineHeight:1.3,marginBottom:4}}>{s.title}</div>
-            {(s.room||s.building)&&<div style={{fontSize:11,color:"#6B6057"}}>{[s.room,s.building,s.floor].filter(Boolean).join(" · ")}</div>}
-          </div>
-          <div style={{display:"flex",gap:4,alignItems:"center",flexShrink:0}}>
-            {isAdmin&&<button onClick={e=>{e.stopPropagation();setEditSession(s);}} style={{background:"none",border:"none",fontSize:13,cursor:"pointer",color:"#C0B49A"}}>✏️</button>}
-          </div>
-        </div>
-        {presenters.length>0&&(
-          <div style={{marginTop:10,display:"flex",gap:5,flexWrap:"wrap"}}>
-            {presenters.map(p=>{
-              const pc=getColor(p.id);
-              return(
-                <div key={p.id} onClick={e=>{e.stopPropagation();setViewAttendee(p);}} style={{display:"flex",alignItems:"center",gap:5,background:UA.warmGray,borderRadius:20,padding:"3px 9px 3px 4px",cursor:"pointer",transition:"background 0.1s"}}
-                  onMouseEnter={e=>e.currentTarget.style.background="#EBE0D2"}
-                  onMouseLeave={e=>e.currentTarget.style.background=UA.warmGray}
-                >
-                  <div style={{width:20,height:20,borderRadius:"50%",background:pc+"20",color:pc,display:"flex",alignItems:"center",justifyContent:"center",fontSize:9,fontWeight:800}}>{initials(p.name)}</div>
-                  <span style={{fontSize:11,fontWeight:600,color:"#3a3a5c"}}>{p.name}</span>
-                </div>
-              );
-            })}
-            {s.coPresenters&&s.coPresenters.split(",").map((cp,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:5,background:"#F0EBF8",borderRadius:20,padding:"3px 9px"}}>
-                <span style={{fontSize:11,fontWeight:600,color:"#6B5EA7"}}>👤 {cp.trim()}</span>
-              </div>
-            ))}
-          </div>
-        )}
-        {!presenters.length&&s.coPresenters&&(
-          <div style={{marginTop:10,display:"flex",gap:5,flexWrap:"wrap"}}>
-            {s.coPresenters.split(",").map((cp,i)=>(
-              <div key={i} style={{display:"flex",alignItems:"center",gap:5,background:"#F0EBF8",borderRadius:20,padding:"3px 9px"}}>
-                <span style={{fontSize:11,fontWeight:600,color:"#6B5EA7"}}>👤 {cp.trim()}</span>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
-    );
-  };
+
 
   return(
-    <div style={{minHeight:"100vh",background:UA.warmGray,fontFamily:"'proxima-nova','Helvetica Neue',Arial,sans-serif",color:"#1a1a2e"}}>
+    <div suppressHydrationWarning style={{minHeight:"100vh",background:UA.warmGray,fontFamily:"'proxima-nova','Helvetica Neue',Arial,sans-serif",color:"#1a1a2e"}}>
       <style>{`
         @import url('https://use.typekit.net/emv3zbo.css');
         @keyframes slideUp{from{transform:translateY(18px);opacity:0}to{transform:translateY(0);opacity:1}}
@@ -768,7 +768,7 @@ export default function App(){
                     <div style={{fontSize:11,color:"#9B8E7A",fontWeight:600}}>{ds.length} session{ds.length!==1?"s":""}</div>
                   </div>
                   <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                    {ds.map(s=><SessionCard key={s.id} s={s}/>)}
+                    {ds.map(s=><SessionCard key={s.id} s={s} attendees={attendees} isAdmin={isAdmin} setViewSession={setViewSession} setEditSession={setEditSession} setViewAttendee={setViewAttendee}/>)}
                   </div>
                 </div>
               );
@@ -812,7 +812,7 @@ export default function App(){
               </div>
             ):(
               <div style={{display:"flex",flexDirection:"column",gap:8}}>
-                {daySessions.map(s=><SessionCard key={s.id} s={s}/>)}
+                {daySessions.map(s=><SessionCard key={s.id} s={s} attendees={attendees} isAdmin={isAdmin} setViewSession={setViewSession} setEditSession={setEditSession} setViewAttendee={setViewAttendee}/>)}
               </div>
             )}
           </>
